@@ -1,0 +1,110 @@
+apply plugin: 'com.android.application'
+
+dependencies {
+    // compile 'com.android.support:support-v4:+'
+    // compile 'com.android.support:appcompat-v7:+'
+    compile 'com.google.code.gson:gson:2.6.1'
+    compile 'org.apache.commons:commons-lang3:3.4'
+    compile 'com.jakewharton:butterknife:7.0.1'
+    compile 'com.jakewharton.timber:timber:3.1.0'
+
+    compile "com.android.support:support-annotations:${android_support_lib_version}"
+
+    testCompile 'junit:junit:4.10'
+    testCompile 'org.robolectric:robolectric:2.4'
+
+    androidTestCompile 'junit:junit:4.10'
+    androidTestCompile 'org.robolectric:robolectric:2.4'
+
+    compile 'com.google.android.gms:play-services-ads:8.4.0'
+    compile 'com.android.support:support-annotations:24.2.0'
+}
+
+
+def buildTime() {
+    return new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"));
+}
+
+// Manifest version information!
+def versionMajor = 0
+def versionMinor = 1
+def versionPatch = 7
+def versionBuild = 0 // bump for dogfood builds, public betas, etc.
+
+android {
+    compileSdkVersion Integer.parseInt(compile_sdk_version)
+    buildToolsVersion '25.0.0'
+
+    defaultConfig {
+        applicationId "application.android.flora.grewordmadeeasy.test"
+        minSdkVersion 10
+        targetSdkVersion 23
+
+        versionCode versionMajor * 10000 + versionMinor * 1000 + versionPatch * 100 + versionBuild
+        versionName "${versionMajor}.${versionMinor}.${versionPatch}"
+
+        buildConfigField "String", "BUILD_TIME", "\"${buildTime()}\""
+    }
+
+    signingConfigs {
+        developfreedom    //Filled in readSigningConfigIfAvailable()
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            readSigningConfigIfAvailable()
+        }
+
+        debug {
+            applicationIdSuffix ".debug"
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            debuggable true
+            //testCoverageEnabled true
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    lintOptions {
+        abortOnError true
+        checkReleaseBuilds true
+        textReport true
+        textOutput 'stdout'
+        fatal 'UnusedResources'
+        warning 'ResourceType' //TODO remove eventually with ButterKnife 8.0 release
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+    sourceSets {
+        androidTest.setRoot('src/test')
+    }
+}
+
+private void readSigningConfigIfAvailable() {
+    if (hasAllSigningProperties()) {
+        android.signingConfigs.developfreedom.storeFile = file(develop_freedom_keystore_path)
+        android.signingConfigs.developfreedom.storePassword = develop_freedom_keystore_password
+        android.signingConfigs.developfreedom.keyAlias = develop_freedom_key_alias
+        android.signingConfigs.developfreedom.keyPassword = develop_freedom_key_password
+        android.buildTypes.release.signingConfig = android.signingConfigs.developfreedom
+    } else {
+        android.buildTypes.release.signingConfig = null
+    }
+}
+
+private boolean hasAllSigningProperties() {
+    (hasProperty('develop_freedom_keystore_path')
+            && hasProperty('develop_freedom_keystore_password')
+            && hasProperty('develop_freedom_key_alias')
+            && hasProperty('develop_freedom_key_password'))
+}
